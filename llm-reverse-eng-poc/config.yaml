@@ -1,0 +1,31 @@
+# Connection: prefer env var or CLI --url. If both absent, falls back to this.
+connection:
+  url: "sqlite:///demo.sqlite"
+
+sampling:
+  max_rows_per_table: 100         # rows to sample per table
+  max_distinct_for_topk: 10000    # if distinct count <= this, compute top-K
+  topk: 5                         # top K values per column
+  infer_text_lengths: true
+  timeout_seconds: 120
+
+mask:
+  # Never send these columns' raw samples to the LLM
+  columns: ["password", "ssn", "credit_card", "pan", "cvv"]
+  # Regex-based masking rules applied to sample values before prompting
+  rules:
+    - pattern: "(?i)\b\d{12,19}\b"   # long digit sequences (e.g., cards)
+      replace: "[REDACTED_DIGITS]"
+    - pattern: "(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"
+      flags: "IGNORECASE"
+      replace: "[REDACTED_EMAIL]"
+
+llm:
+  provider: "openai"       # "openai" (OpenAI-style). Edit llm_client.py to add others.
+  model: "gpt-4o-mini"     # any model your endpoint supports
+  temperature: 0.2
+  max_tokens: 2000
+  send_samples: true       # if false, only aggregates/schema are sent
+
+output:
+  dir: "out"
